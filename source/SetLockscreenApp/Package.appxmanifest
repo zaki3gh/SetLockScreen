@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
+  <Identity Name="17787zakii.64709012E2351" Publisher="CN=5B9929A3-CFFD-4872-AA32-52070C66BAC2" Version="1.0.0.15" />
+  <Properties>
+    <DisplayName>ms-resource:AppName</DisplayName>
+    <PublisherDisplayName>zaki3</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Prerequisites>
+    <OSMinVersion>6.2.1</OSMinVersion>
+    <OSMaxVersionTested>6.2.1</OSMaxVersionTested>
+  </Prerequisites>
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="MyApps.SetLockscreen.App">
+      <VisualElements DisplayName="ms-resource:AppName" Logo="Assets\Logo.png" SmallLogo="Assets\SmallLogo.png" Description="ms-resource:AppDescription" ForegroundText="light" BackgroundColor="#4d4d4d">
+        <DefaultTile ShowName="allLogos" />
+        <SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#4d4d4d" />
+      </VisualElements>
+      <Extensions>
+        <Extension Category="windows.backgroundTasks" EntryPoint="MyApps.SetLockscreen.BackgroundTask.SetLockscreenTask">
+          <BackgroundTasks>
+            <Task Type="systemEvent" />
+          </BackgroundTasks>
+        </Extension>
+        <Extension Category="windows.shareTarget">
+          <ShareTarget>
+            <SupportedFileTypes>
+              <FileType>.bmp</FileType>
+              <FileType>.png</FileType>
+              <FileType>.jpg</FileType>
+              <FileType>.jpeg</FileType>
+            </SupportedFileTypes>
+            <DataFormat>Bitmap</DataFormat>
+          </ShareTarget>
+        </Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+</Package>

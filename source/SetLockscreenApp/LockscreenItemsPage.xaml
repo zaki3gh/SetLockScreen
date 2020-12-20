@@ -1,0 +1,308 @@
+﻿<common:LayoutAwarePage
+    x:Name="pageRoot"
+    x:Class="MyApps.SetLockscreen.LockscreenItemsPage"
+    DataContext="{Binding DefaultViewModel, RelativeSource={RelativeSource Self}}"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MyApps.SetLockscreen"
+    xmlns:common="using:MyApps.SetLockscreen.Common"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+
+        <!-- このページで表示されるアイテムのコレクション -->
+        <CollectionViewSource
+            x:Name="itemsViewSource"
+            Source="{Binding Items}"/>
+        
+        <common:BooleanToVisibilityConverter x:Key="TrueIsVisibleConverter" />
+        <common:BooleanNegationConverter x:Key="BooleanNegationConverter" />
+        
+        <!-- GridView用 -->
+        <!-- based on Standard250x250ItemTemplate -->
+        <DataTemplate x:Key="MyGridView250x250ItemTemplate">
+            <Grid HorizontalAlignment="Stretch" Width="320" Height="180">
+                <Image Source="{Binding Image}" Stretch="Uniform" AutomationProperties.Name="{Binding Name}" ToolTipService.ToolTip="{Binding Name}" />
+            </Grid>
+        </DataTemplate>
+
+        <!-- ListView用 -->
+        <!-- based on Standard80ItemTemplate -->
+        <DataTemplate x:Key="MyListView80ItemTemplate">
+            <Grid Margin="6" HorizontalAlignment="Stretch" Width="144" Height="81">
+                <Image Source="{Binding Image}" Stretch="Uniform" AutomationProperties.Name="{Binding Name}" ToolTipService.ToolTip="{Binding Name}"/>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Paste ListView用 -->
+        <!-- based on Standard80ItemTemplate -->
+        <DataTemplate x:Key="MyPasteView80ItemTemplate">
+            <Grid Margin="6" HorizontalAlignment="Stretch" Width="144" Height="81">
+                <Image Source="{Binding Image}" Stretch="Uniform" />
+            </Grid>
+        </DataTemplate>
+
+    </Page.Resources>
+
+    <!--
+        このグリッドは 2 つの行を定義するページのルート パネルとして機能します:
+        * 行 0 には [戻る] ボタンおよびページ タイトルが含まれます
+        * 行 1 には残りのページ レイアウトが含まれます
+    -->
+    <Grid Style="{StaticResource LayoutRootStyle}">
+        <Grid.Background>
+            <ImageBrush x:Name="BackgroundBrush" Opacity="0.5" Stretch="UniformToFill" />
+        </Grid.Background>
+        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="140"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ほとんどのビューステートで使用される水平スクロール グリッド-->
+        <GridView
+            x:Name="itemGridView"
+            AutomationProperties.AutomationId="ItemsGridView"
+            AutomationProperties.Name="Items"
+            TabIndex="1"
+            Grid.RowSpan="2"
+            Padding="116,136,116,46"
+            ItemsSource="{Binding Source={StaticResource itemsViewSource}}"
+            ItemTemplate="{StaticResource MyGridView250x250ItemTemplate}"
+            SelectionMode="Multiple"
+            IsSwipeEnabled="false"
+            AllowDrop="True"
+            CanDragItems="True"
+            CanReorderItems="True"
+            IsEnabled="{Binding Path=IsItemChanging, Mode=OneWay, Converter={StaticResource BooleanNegationConverter}, ElementName=pageRoot}"
+            SelectionChanged="ItemsView_SelectionChanged"/>
+
+        <!-- スナップの場合のみ使用される垂直スクロール リスト -->
+        <ListView
+            x:Name="itemListView"
+            AutomationProperties.AutomationId="ItemsListView"
+            AutomationProperties.Name="Items"
+            TabIndex="1"
+            Grid.Row="1"
+            Visibility="Collapsed"
+            Margin="0,-10,0,0"
+            Padding="10,0,0,60"
+            ItemsSource="{Binding Source={StaticResource itemsViewSource}}"
+            ItemTemplate="{StaticResource MyListView80ItemTemplate}"
+            SelectionMode="Multiple"
+            IsSwipeEnabled="false"
+            AllowDrop="True"
+            CanDragItems="True"
+            CanReorderItems="True"
+            IsEnabled="{Binding Path=IsItemChanging, Mode=OneWay, Converter={StaticResource BooleanNegationConverter}, ElementName=pageRoot}"
+            SelectionChanged="ItemsView_SelectionChanged">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+
+        <!-- Progress -->
+        <StackPanel 
+            Grid.RowSpan="2"
+            Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
+            Visibility="{Binding Path=IsItemChanging, Mode=OneWay, Converter={StaticResource TrueIsVisibleConverter}, ElementName=pageRoot}">
+            <StackPanel.Background>
+                <SolidColorBrush Color="Black" Opacity="0.5" />
+            </StackPanel.Background>
+            <ProgressRing 
+                Width="100" Height="100" Margin="20" 
+                IsActive="{Binding Path=IsItemChanging, Mode=OneWay, ElementName=pageRoot}" />
+            <TextBlock
+                VerticalAlignment="Center"
+                Style="{StaticResource BasicTextStyle}"
+                Text="{Binding Source={StaticResource MyResource}, Path=[ProgressIsItemChangingText]}" />
+            <Button 
+                Margin="20" VerticalAlignment="Top"
+                FontFamily="Segoe UI Symbol"
+                Content="&#xE10A;"
+                ToolTipService.ToolTip="{Binding Source={StaticResource MyResource}, Path=[ProgressIsItemChangingCancelButton]}" 
+                Click="CancelItemChangingButton_Click" />
+        </StackPanel>
+
+        <!-- [戻る] ボタンおよびページ タイトル-->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="backButton" Click="GoBack" IsEnabled="{Binding Frame.CanGoBack, ElementName=pageRoot}" Style="{StaticResource BackButtonStyle}"/>
+            <TextBlock x:Name="pageTitle" Grid.Column="1" Text="{Binding Source={StaticResource MyResource}, Path=[AppName]}" IsHitTestVisible="false" Style="{StaticResource PageHeaderTextStyle}"/>
+        </Grid>
+
+        <!-- 設定チャーム - ロック画面の切り替えに関する設定 -->
+        <Popup
+            x:Name="UpdateSettingPopup"
+            IsLightDismissEnabled="True">
+            <Popup.ChildTransitions>
+                <TransitionCollection>
+                    <EdgeUIThemeTransition Edge="Right" />
+                </TransitionCollection>
+            </Popup.ChildTransitions>
+            <local:UpdateSettingPopup
+                Loaded="UpdateSettingPopup_Loaded" 
+                Completed="UpdateSettingPopup_Completed"/>
+        </Popup>
+
+        <!-- Help / Privacy Policy -->
+        <Popup x:Name="HelpPrivacyPolicyPopup"
+               IsLightDismissEnabled="True">
+            <Border BorderThickness="10" BorderBrush="DarkBlue" Background="DarkBlue">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <WebView x:Name="HelpPageWebView" Grid.Row="0" Visibility="Collapsed" Loaded="HelpPrivacyPolicyPopup_Loaded" />
+                    <Button Grid.Row="1" 
+                            HorizontalAlignment="Center"
+                            Margin="0, 7, 0, 0"
+                            Content="{Binding Source={StaticResource MyResource}, Path=[HelpPagePopupCloseButtonName]}" 
+                            Click="AppHelpCloseButton_Click" />
+                </Grid>
+            </Border>
+        </Popup>
+        
+        <!-- Pasteボタン -->
+        <Popup
+            x:Name="PastePopup"
+            IsLightDismissEnabled="True">
+            <Border
+                Background="{StaticResource ApplicationPageBackgroundThemeBrush}" 
+                Loaded="PastePopup_Border_Loaded"
+                MaxHeight="400">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ListView
+                        x:Name="pastedItemsView"
+                        Grid.Row="0"
+                        HorizontalAlignment="Center"
+                        SelectionMode="Multiple"
+                        IsSwipeEnabled="false"
+                        ItemTemplate="{StaticResource MyPasteView80ItemTemplate}">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+                    <Button
+                        Grid.Row="1"
+                        HorizontalAlignment="Center"
+                        Margin="0, 10, 0, 10"
+                        Content="{Binding Source={StaticResource MyResource}, Path=[AppBarPastePopupPasteButton]}" 
+                        Click="PastePopup_PasteButton_Click" />
+                </Grid>
+            </Border>
+        </Popup>
+        
+        <VisualStateManager.VisualStateGroups>
+
+            <!--表示状態には、アプリケーションのビューステートが反映されます -->
+            <VisualStateGroup x:Name="ApplicationViewStates">
+                <VisualState x:Name="FullScreenLandscape"/>
+                <VisualState x:Name="Filled"/>
+
+                <!-- ページ全体では、縦方向に対して、より狭い 100 ピクセルの余白の規則を優先します -->
+                <VisualState x:Name="FullScreenPortrait">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="backButton" Storyboard.TargetProperty="Style">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource PortraitBackButtonStyle}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="itemGridView" Storyboard.TargetProperty="Padding">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="96,136,86,56"/>
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+
+                <!--
+                    スナップの場合、[戻る] ボタンとタイトルには異なるスタイルが使用され、他のすべてのビューステートで表示されるグリッドに対して
+                    一覧の表現が置き換えられます
+                -->
+                <VisualState x:Name="Snapped">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="backButton" Storyboard.TargetProperty="Style">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SnappedBackButtonStyle}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="pageTitle" Storyboard.TargetProperty="Style">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SnappedPageHeaderTextStyle}"/>
+                        </ObjectAnimationUsingKeyFrames>
+
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="itemListView" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Visible"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="itemGridView" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                        </ObjectAnimationUsingKeyFrames>
+
+                        <!-- AppBar -->
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="AddAppBarButton" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                        </ObjectAnimationUsingKeyFrames>
+
+                        <!--<ObjectAnimationUsingKeyFrames Storyboard.TargetName="PasteAppBarButton" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="Collapsed"/>
+                        </ObjectAnimationUsingKeyFrames>-->
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+    
+    <Page.BottomAppBar>
+        <AppBar 
+            Loaded="BottomAppBar_Loaded" 
+            Unloaded="BottomAppBar_Unloaded" 
+            IsEnabled="{Binding Path=IsItemChanging, Mode=OneWay, Converter={StaticResource BooleanNegationConverter}}">
+            <StackPanel Orientation="Horizontal">
+                <Button 
+                    Style="{StaticResource SetLockScreenAppBarButtonStyle}" 
+                    AutomationProperties.Name="{Binding Source={StaticResource MyResource}, Path=[AppBarSetLockscreenButton]}" 
+                    IsEnabled="{Binding Path=ItemsSelected, Mode=OneWay}"
+                    Click="SetLockscreenButton_Click" />
+                <Button 
+                    x:Name="PinToStartAppBarButton" 
+                    Style="{StaticResource PinAppBarButtonStyle}" 
+                    AutomationProperties.Name="{Binding Source={StaticResource MyResource}, Path=[AppBarPinToStartButton]}" 
+                    IsEnabled="{Binding Path=ItemsSelected, Mode=OneWay}"
+                    Click="PinToStartButton_Click" />
+                <Button 
+                    x:Name="UnPinFromStartAppBarButton" 
+                    Style="{StaticResource UnPinAppBarButtonStyle}" 
+                    AutomationProperties.Name="{Binding Source={StaticResource MyResource}, Path=[AppBarUnPinFromStartButton]}" 
+                    IsEnabled="{Binding Path=ItemsSelected, Mode=OneWay}"
+                    Click="UnPinToStartButton_Click" />
+                <Button 
+                    Style="{StaticResource RemoveAppBarButtonStyle}" 
+                    AutomationProperties.Name="{Binding Source={StaticResource MyResource}, Path=[AppBarRemoveButton]}" 
+                    IsEnabled="{Binding Path=ItemsSelected, Mode=OneWay}"
+                    Click="RemoveFileButton_Click" />
+                <Button 
+                    x:Name="AddAppBarButton" 
+                    Style="{StaticResource AddAppBarButtonStyle}" 
+                    AutomationProperties.Name="{Binding Source={StaticResource MyResource}, Path=[AppBarAddButton]}" 
+                    Click="AddFileButton_Click"  />
+                <Button 
+                    x:Name="PasteAppBarButton" 
+                    Style="{StaticResource PasteAppBarButtonStyle}" 
+                    AutomationProperties.Name="{Binding Source={StaticResource MyResource}, Path=[AppBarPasteButton]}" 
+                    Click="PasteAppBarButton_Click"  />
+            </StackPanel>
+        </AppBar>
+    </Page.BottomAppBar>
+</common:LayoutAwarePage>
